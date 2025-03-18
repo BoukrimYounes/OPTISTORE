@@ -14,10 +14,10 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         category::insert([
-            ['name' => 'MenSunglasses'],
-            ['name' => 'WomenSunglasses'],
-            ['name' => 'MenEyeglasses'],
-            ['name' => 'WOmenEyeglasses'],
+            ['name' => 'Men Sun glasses'],
+            ['name' => 'Women Sun glasses'],
+            ['name' => 'Men Eye glasses'],
+            ['name' => 'Women Eye glasses'],
             ['name' => 'Accessories'],
         ]);
     }

@@ -17,9 +17,13 @@ class ProductImageFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'image' => $this->faker->imageUrl(400, 400, 'products'),
-            'product_id' => Product::factory(),
-        ];
+            $files = glob(public_path('storage/products/*/*.{jpg,jpeg,png,gif}'), GLOB_BRACE);
+            $imageUrl = $files ? 'products/' . basename($this->faker->randomElement($files)) : 'products/default.jpg';
+    
+            return [
+                'product_id' => Product::factory(),
+                'image_url' => $imageUrl,
+                'is_main' => $this->faker->boolean(20),
+            ];
     }
 }

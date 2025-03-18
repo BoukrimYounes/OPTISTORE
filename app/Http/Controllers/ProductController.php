@@ -52,6 +52,17 @@ class ProductController extends Controller
             'brand_id' =>['required'],
         ]);
         $product = Product::create($feilds);
+
+        $request->validate([
+           'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('products', 'public'); // Store image in storage/app/public/products
+                $product->images()->create(['image_url' => $path]);
+            }
+        }
+    
         return $product;
     }
 
