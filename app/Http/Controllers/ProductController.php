@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\category;
 use App\Models\Product;
+use App\Models\productImage;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -16,12 +18,12 @@ class ProductController extends Controller
 
         if ($categoryId) {
             $products = Product::where('category_id', $categoryId)
-            ->with(['brand','category']) // ✅ Correct way to apply `with()`
-            ->get();
+                ->with(['brand', 'category', 'images']) // ✅ Correct way to apply `with()`
+                ->get();
         } else {
-            $products = Product::with(['brand','category'])->get(); // or any other logic to return all products
+            $products = Product::with(['brand', 'category', 'images'])->get(); // or any other logic to return all products
         }
-    
+
         return response()->json($products);
     }
 
@@ -38,45 +40,62 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        $feilds = $request->validate([
-            'title' =>['required'],
-            'slug' =>['nullable'],
-            'quantity' =>['required'],
-            'description' =>['required'],
-            'published' =>['required'],
-            'inStock' =>['required'],
-            'sold' =>['required'],
-            'price' =>['required'],
-            'color' =>['required'],
-            'category_id' =>['required'],
-            'brand_id' =>['required'],
-        ]);
-        $product = Product::create($feilds);
 
-        $request->validate([
-           'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+        $validatedData = $request->validate([
+            'title' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:products,slug',
+            'quantity' => 'required|integer|min:0',
+            'description' => 'required|string',
+            'published' => 'required|boolean',
+            'inStock' => 'required|boolean',
+            'sold' => 'required|boolean',
+            'price' => 'required|numeric|min:0',
+            'color' => 'required|string|max:50',
+            'category_id' => 'required|exists:categories,id',
+            'brand_id' => 'required|exists:brands,id',
+            'images.*' => 'image|mimes:jpg,webp,jpeg,png|max:2048',
         ]);
+
+        $product = Product::create($validatedData);
+
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $path = $image->store('products', 'public'); // Store image in storage/app/public/products
-                $product->images()->create(['image_url' => $path]);
+                $imagePath = $image->store("products", 'public');
+
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_url' => "storage/" . $imagePath,
+                ]);
             }
         }
-    
-        return $product;
+        return response()->json([
+            'message' => 'Product created successfully!',
+            'product' => $product,
+        ], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Product $product)
+    public function show(string $id)
     {
-        return $product;
+        $product = Product::with(['brand', 'category', 'images'])->find($id);
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'product' => $product
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+
+
     public function edit(string $id)
     {
         //
@@ -85,14 +104,29 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request,Product $product)
-    {
-        $feilds = $request->validate([
+    public function update(Request $request, Product $product)
+{
+    $validatedData = $request->validate([
+        'title' => 'sometimes|string|max:255',
+        'slug' => 'sometimes|string|max:255|unique:products,slug,' . $product->id,
+        'quantity' => 'sometimes|integer|min:0',
+        'description' => 'sometimes|string',
+        'published' => 'sometimes|boolean',
+        'inStock' => 'sometimes|boolean',
+        'sold' => 'sometimes|boolean',
+        'price' => 'sometimes|numeric|min:0',
+        'color' => 'sometimes|string|max:50',
+        'category_id' => 'sometimes|exists:categories,id',
+        'brand_id' => 'sometimes|exists:brands,id',
+    ]);
 
-        ]);
-        $product->update($feilds);
-        return $product;
-    }
+    $product->update($validatedData);
+
+    return response()->json([
+        'message' => 'Product updated successfully!',
+        'product' => $product
+    ]);
+}
 
     /**
      * Remove the specified resource from storage.
@@ -100,6 +134,6 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         $product->delete();
-        return ['message' =>'the post was deleted'];
+        return ['message' => 'the post was deleted'];
     }
 }

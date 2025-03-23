@@ -5,15 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\cartItem;
 use App\Http\Requests\StorecartItemRequest;
 use App\Http\Requests\UpdatecartItemRequest;
+use Illuminate\Http\Request;
 
 class CartItemController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $session_id = $request->query('session_id');
+        return cartItem::where('session_id', $session_id)->with('product')->get();
+        return response()->json(['cart' => $cartItems]);
     }
 
     /**
@@ -27,9 +30,15 @@ class CartItemController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorecartItemRequest $request)
+    public function store(Request $request)
     {
-        //
+        $valideData = $request->validate([
+            'product_id' =>'required|exists:products,id',
+            'quantity' =>'required|min:1',
+            'session_id' => 'nullable|string',
+        ]);
+        $cart = cartItem::create($valideData);
+        return $cart;
     }
 
     /**

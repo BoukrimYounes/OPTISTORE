@@ -28,11 +28,8 @@ class DatabaseSeeder extends Seeder
         userAddress::factory(10)->create();
         Product::factory(10)->create();
         Order::factory(5)->create();
-        cartItem::factory(15)->create();
-        productImage::factory(20)->create();
+        // cartItem::factory(15)->create();
         brand::factory(20)->create();
-
-
-       
+        productImage::factory(20)->create();
     }
 }
